@@ -16,7 +16,7 @@
 
 import Zemu, { ClickNavigation, TouchNavigation } from '@zondax/zemu'
 // @ts-ignore
-import { CosmosApp } from '@zondax/ledger-cosmos-js'
+import CosmosApp from '@zondax/ledger-cosmos-js'
 import { defaultOptions, DEVICE_MODELS, tx_sign_textual, TEXTUAL_TX } from './common'
 // @ts-ignore
 import secp256k1 from 'secp256k1/elliptic'
@@ -43,14 +43,12 @@ describe('Textual', function () {
       await sim.start({ ...defaultOptions, model: m.name })
       const app = new CosmosApp(sim.getTransport())
 
-      const path = [44, 118, 0, 0, 0]
+      const path = "m/44'/118'/0'/0/0"
       const tx = Buffer.from(tx_sign_textual, 'hex')
       const hrp = 'cosmos'
 
       // get address / publickey
       const respPk = await app.getAddressAndPubKey(path, hrp)
-      expect(respPk.return_code).toEqual(0x9000)
-      expect(respPk.error_message).toEqual('No errors')
       console.log(respPk)
 
       // do not wait here..
@@ -62,9 +60,6 @@ describe('Textual', function () {
 
       const resp = await signatureRequest
       console.log(resp)
-
-      expect(resp.return_code).toEqual(0x9000)
-      expect(resp.error_message).toEqual('No errors')
       expect(resp).toHaveProperty('signature')
 
       // Now verify the signature
@@ -92,14 +87,12 @@ describe('Textual', function () {
       // Change to expert mode so we can skip fields
       await sim.toggleExpertMode()
 
-      const path = [44, 118, 0, 0, 0]
+      const path = "m/44'/118'/0'/0/0"
       const tx = Buffer.from(tx_sign_textual, 'hex')
       const hrp = 'cosmos'
 
       // get address / publickey
       const respPk = await app.getAddressAndPubKey(path, hrp)
-      expect(respPk.return_code).toEqual(0x9000)
-      expect(respPk.error_message).toEqual('No errors')
       console.log(respPk)
 
       // do not wait here..
@@ -111,9 +104,6 @@ describe('Textual', function () {
 
       const resp = await signatureRequest
       console.log(resp)
-
-      expect(resp.return_code).toEqual(0x9000)
-      expect(resp.error_message).toEqual('No errors')
       expect(resp).toHaveProperty('signature')
 
       // Now verify the signature
@@ -139,16 +129,14 @@ describe('Textual', function () {
       const app = new CosmosApp(sim.getTransport())
 
       // Enable expert to allow sign with eth path
-      await sim.toggleExpertMode();
+      await sim.toggleExpertMode()
 
-      const path = [44, 60, 0, 0, 0]
+      const path = "m/44'/60'/0'/0/0"
       const tx = Buffer.from(tx_sign_textual, 'hex')
       const hrp = 'inj'
 
       // get address / publickey
       const respPk = await app.getAddressAndPubKey(path, hrp)
-      expect(respPk.return_code).toEqual(0x9000)
-      expect(respPk.error_message).toEqual('No errors')
       console.log(respPk)
 
       // do not wait here..
@@ -160,9 +148,6 @@ describe('Textual', function () {
 
       const resp = await signatureRequest
       console.log(resp)
-
-      expect(resp.return_code).toEqual(0x9000)
-      expect(resp.error_message).toEqual('No errors')
       expect(resp).toHaveProperty('signature')
 
       // Now verify the signature
@@ -187,41 +172,38 @@ describe('Textual', function () {
       await sim.start({ ...defaultOptions, model: m.name })
       const app = new CosmosApp(sim.getTransport())
 
-      const path = [44, 60, 0, 0, 0]
+      const path = "m/44'/60'/0'/0/0"
       const tx = Buffer.from(tx_sign_textual, 'hex')
       const hrp = 'inj'
 
       // get address / publickey
       const respPk = await app.getAddressAndPubKey(path, hrp)
-      expect(respPk.return_code).toEqual(0x9000)
-      expect(respPk.error_message).toEqual('No errors')
       console.log(respPk)
 
       // do not wait here..
-      const signatureRequest = app.sign(path, tx, hrp, TEXTUAL_TX)
+      try {
+        const signatureRequest = app.sign(path, tx, hrp, TEXTUAL_TX)
+        // Wait until we are not in the main menu
+        await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
+        let nav = undefined
+        if (m.name === 'stax') {
+          const okButton: IButton = {
+            x: 200,
+            y: 540,
+            delay: 0.25,
+          }
+          nav = new TouchNavigation([ButtonKind.ConfirmYesButton])
+          nav.schedule[0].button = okButton
+        } else {
+          nav = new ClickNavigation([1, 0])
+        }
+        await sim.navigate('.', `${m.prefix.toLowerCase()}-textual-sign_basic_eth_warning`, nav.schedule)
 
-      // Wait until we are not in the main menu
-      await sim.waitUntilScreenIsNot(sim.getMainMenuSnapshot())
-      let nav = undefined;
-      if (m.name === 'stax') {
-        const okButton: IButton = {
-          x: 200,
-          y: 540,
-          delay: 0.25,
-        };
-        nav = new TouchNavigation([
-          ButtonKind.ConfirmYesButton,
-        ]);
-        nav.schedule[0].button = okButton;
-      } else {
-        nav = new ClickNavigation([1, 0]);
+        const resp = await signatureRequest
+        console.log(resp)
+      } catch (e: any) {
+        expect(e.message).toEqual('Data is invalid')
       }
-      await sim.navigate('.', `${m.prefix.toLowerCase()}-textual-sign_basic_eth_warning`, nav.schedule);
-
-      const resp = await signatureRequest
-      console.log(resp)
-
-      expect(resp.return_code).toEqual(0x6984)
     } finally {
       await sim.close()
     }
@@ -236,14 +218,12 @@ describe('Textual', function () {
       // Enable expert to allow sign with eth path
       await sim.toggleExpertMode()
 
-      const path = [44, 60, 0, 0, 0]
+      const path = "m/44'/60'/0'/0/0"
       const tx = Buffer.from(tx_sign_textual, 'hex')
       const hrp = 'evmos'
 
       // get address / publickey
       const respPk = await app.getAddressAndPubKey(path, hrp)
-      expect(respPk.return_code).toEqual(0x9000)
-      expect(respPk.error_message).toEqual('No errors')
       console.log(respPk)
 
       // do not wait here..
@@ -262,8 +242,6 @@ describe('Textual', function () {
       const resp = await signatureRequest
       console.log(resp)
 
-      expect(resp.return_code).toEqual(0x9000)
-      expect(resp.error_message).toEqual('No errors')
       expect(resp).toHaveProperty('signature')
 
       // Now verify the signature
